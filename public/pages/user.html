@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User API Documentation</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../styles//main.page.css" />
+  </head>
+  <body>
+    <div class="main-wrapper">
+      <aside class="sidebar-list" id="sidebarList">
+        <div class="sidebar-header">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <i class="fas fa-cube"></i>
+            <span class="sidebar-title">APIs</span>
+          </div>
+          <button
+            class="sidebar-toggle"
+            id="sidebarToggle"
+            title="Toggle Sidebar"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <ul class="api-list" id="apiList">
+          <li
+            style="
+              padding: 20px 16px;
+              text-align: center;
+              color: var(--text-secondary);
+            "
+          >
+            <i class="fas fa-spinner fa-spin" style="font-size: 24px"></i>
+          </li>
+        </ul>
+      </aside>
+
+      <div class="content-wrapper">
+        <div class="container" id="container">
+          <div class="loading">
+            <i class="fas fa-hourglass-start"></i>
+            <span>Loading documentation...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let allApis = [];
+      const methodIcons = {
+        GET: 'fa-arrow-down',
+        POST: 'fa-arrow-up',
+        PUT: 'fa-pen',
+        PATCH: 'fa-wand-magic-sparkles',
+        DELETE: 'fa-trash',
+      };
+
+      const sidebarList = document.getElementById('sidebarList');
+      const sidebarToggle = document.getElementById('sidebarToggle');
+
+      sidebarToggle.addEventListener('click', () => {
+        sidebarList.classList.toggle('collapsed');
+        const icon = sidebarToggle.querySelector('i');
+        if (sidebarList.classList.contains('collapsed')) {
+          icon.classList.remove('fa-chevron-right');
+          icon.classList.add('fa-chevron-left');
+        } else {
+          icon.classList.remove('fa-chevron-left');
+          icon.classList.add('fa-chevron-right');
+        }
+      });
+
+      async function loadApis() {
+        try {
+          const response = await fetch('../data/user.data.json');
+          allApis = await response.json();
+
+          if (allApis && allApis.length > 0) {
+            renderApiList();
+            renderDocumentation(0);
+          } else {
+            document.getElementById('container').innerHTML =
+              '<div style="padding: 20px; color: var(--text-secondary);">No API data found</div>';
+          }
+        } catch (error) {
+          document.getElementById(
+            'container'
+          ).innerHTML = `<div style="padding: 20px; color: #c62828;">Error loading documentation: ${error.message}</div>`;
+        }
+      }
+
+      function getMethodIcon(method) {
+        return methodIcons[method] || 'fa-cube';
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function renderApiList() {
+        const apiList = document.getElementById('apiList');
+        apiList.innerHTML = '';
+
+        allApis.forEach((api, index) => {
+          const item = document.createElement('li');
+          item.className = `api-item ${index === 0 ? 'active' : ''}`;
+          item.onclick = () => selectApi(index);
+
+          item.innerHTML = `
+                    <i class="fas ${getMethodIcon(api.apiMethod)}"></i>
+                    <div class="api-item-text">
+                        <div class="api-item-name">${escapeHtml(
+                          api.apiName
+                        )}</div>
+                        <div class="api-item-method">${api.apiMethod}</div>
+                    </div>
+                `;
+
+          apiList.appendChild(item);
+        });
+      }
+
+      function selectApi(index) {
+        document.querySelectorAll('.api-item').forEach((item, i) => {
+          item.classList.toggle('active', i === index);
+        });
+        renderDocumentation(index);
+      }
+
+      function copyToClipboard(text, btn) {
+        navigator.clipboard.writeText(text).then(() => {
+          const icon = btn.querySelector('i');
+          icon.classList.remove('fa-copy');
+          icon.classList.add('fa-check');
+          btn.classList.add('copied');
+          setTimeout(() => {
+            icon.classList.remove('fa-check');
+            icon.classList.add('fa-copy');
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      }
+
+      function formatJson(obj) {
+        return JSON.stringify(obj, null, 2);
+      }
+
+      function renderDocumentation(index) {
+        const api = allApis[index];
+        const container = document.getElementById('container');
+
+        const html = `
+                <div class="header">
+                    <h1 class="api-title">
+                        <i class="fas ${getMethodIcon(api.apiMethod)}"></i>
+                        ${escapeHtml(api.apiName)}
+                    </h1>
+                    <div class="api-meta">
+                        <span class="method-badge">${api.apiMethod}</span>
+                        <div class="meta-item">
+                            <i class="fas fa-user"></i>
+                            <span class="meta-label">Author</span>
+                            <span class="meta-value">${escapeHtml(
+                              api.author
+                            )}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-code"></i>
+                            <span class="meta-label">Code Lines</span>
+                            <span class="meta-value">${
+                              api.totalLineOfCode
+                            }</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-circle-info"></i>
+                        Overview
+                    </h2>
+                    <p class="section-description">${escapeHtml(
+                      api.apiDescription
+                    )}</p>
+                    <div class="grid">
+                        <div class="grid-item">
+                            <div class="grid-item-title">
+                                <i class="fas fa-lightbulb"></i>
+                                Use Case
+                            </div>
+                            <div class="grid-item-content">${escapeHtml(
+                              api.apiUseCase
+                            )}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-link"></i>
+                        Endpoint
+                    </h2>
+                    <div class="url-section">
+                        <div class="url-text">${escapeHtml(api.apiURL)}</div>
+                        <button class="copy-btn" onclick="copyToClipboard('${api.apiURL.replace(
+                          /'/g,
+                          "\\'"
+                        )}', this)">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-arrow-right"></i>
+                        Request
+                    </h2>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-label">
+                                <i class="fas fa-code"></i>
+                                Request Body
+                            </span>
+                            <button class="copy-btn" onclick="copyToClipboard(\`${formatJson(
+                              api.apiTestData.request
+                            ).replace(/`/g, '\\`')}\`, this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="code-content">${escapeHtml(
+                          formatJson(api.apiTestData.request)
+                        )}</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-arrow-left"></i>
+                        Response
+                    </h2>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-label">
+                                <i class="fas fa-check-circle"></i>
+                                Response Body
+                            </span>
+                            <button class="copy-btn" onclick="copyToClipboard(\`${formatJson(
+                              api.apiTestData.response
+                            ).replace(/`/g, '\\`')}\`, this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="code-content">${escapeHtml(
+                          formatJson(api.apiTestData.response)
+                        )}</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-flask-vial"></i>
+                        Testing in Postman
+                    </h2>
+                    <ol class="steps">
+                        ${api.howToTestTheAPIInThePostman
+                          .split('\n')
+                          .map((step) => `<li>${escapeHtml(step)}</li>`)
+                          .join('')}
+                    </ol>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-laptop-code"></i>
+                        Frontend Implementation
+                    </h2>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-label">
+                                <i class="fab fa-js"></i>
+                                JavaScript
+                            </span>
+                            <button class="copy-btn" onclick="copyToClipboard(\`${api.howToUseTheAPIInTheFrontend.replace(
+                              /`/g,
+                              '\\`'
+                            )}\`, this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="code-content">${escapeHtml(
+                          api.howToUseTheAPIInTheFrontend
+                        )}</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-diagram-project"></i>
+                        User Flow
+                    </h2>
+                    <p class="section-description">${escapeHtml(
+                      api.howUserWillUseThis
+                    )}</p>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-table"></i>
+                        Request Schema
+                    </h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(api.requestSchema.properties)
+                                  .map(
+                                    ([key, value]) => `
+                                    <tr>
+                                        <td><strong>${escapeHtml(
+                                          key
+                                        )}</strong></td>
+                                        <td><code>${escapeHtml(
+                                          value.type
+                                        )}</code></td>
+                                        <td>${escapeHtml(
+                                          value.description || ''
+                                        )}</td>
+                                    </tr>
+                                `
+                                  )
+                                  .join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        Error Responses
+                    </h2>
+                    ${Object.entries(api.errorResponses)
+                      .map(
+                        ([code, error]) => `
+                        <div style="margin-bottom: 16px;">
+                            <div style="margin-bottom: 8px;">
+                                <span class="status-badge status-error">
+                                    <i class="fas fa-exclamation"></i>
+                                    ${code}
+                                </span>
+                                <strong style="margin-left: 8px; color: var(--text-primary);">${escapeHtml(
+                                  error.message
+                                )}</strong>
+                            </div>
+                        </div>
+                    `
+                      )
+                      .join('')}
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">
+                        <i class="fas fa-folder-open"></i>
+                        Source Files
+                    </h2>
+                    <div class="grid">
+                        ${Object.entries(api.filePath)
+                          .map(
+                            ([key, path]) => `
+                            <div class="grid-item">
+                                <div class="grid-item-title">
+                                    <i class="fas fa-file"></i>
+                                    ${
+                                      key.charAt(0).toUpperCase() + key.slice(1)
+                                    }
+                                </div>
+                                <div class="grid-item-content">
+                                    <a href="${path}" style="color: var(--accent); text-decoration: none; font-weight: 600;" target="_blank">
+                                        <i class="fas fa-github"></i> View GitHub
+                                    </a>
+                                </div>
+                            </div>
+                        `
+                          )
+                          .join('')}
+                    </div>
+                </div>
+            `;
+
+        container.innerHTML = html;
+      }
+
+      document.addEventListener('DOMContentLoaded', loadApis);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+[
+  {
+    "apiName": "Verify Email",
+    "apiMethod": "POST",
+    "apiURL": "http://localhost:5000/api/v1/verify-email",
+    "apiDescription": "Verifies if an email address is valid and exists in the system. This endpoint checks the email format and confirms whether the email is already registered or available for signup.",
+    "apiUseCase": "User registration verification, email availability check before signup, password reset email validation",
+    "author": "Gyana Prakash Khandual",
+    "apiTestData": {
+      "request": {
+        "email": "service.lovetia@gmail.com"
+      },
+      "response": {
+        "success": true,
+        "message": "Email verified successfully",
+        "data": {
+          "email": "service.lovetia@gmail.com",
+          "isValid": true,
+          "isRegistered": true,
+          "verificationToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+      }
+    },
+    "howToTestTheAPIInThePostman": "1. Open Postman and create a new POST request\n2. Set URL to: http://localhost:5000/api/v1/verify-email\n3. Go to Headers tab and add: Content-Type: application/json\n4. Go to Body tab, select raw and JSON format\n5. Paste: {\"email\": \"service.lovetia@gmail.com\"}\n6. Click Send button\n7. Expected response status: 200 OK with success: true",
+    "howToUseTheAPIInTheFrontend": "const verifyEmail = async (email) => {\n  try {\n    const response = await fetch('http://localhost:5000/api/v1/verify-email', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ email })\n    });\n    const data = await response.json();\n    if (data.success) {\n      console.log('Email verified:', data.data);\n    }\n  } catch (error) {\n    console.error('Verification failed:', error);\n  }\n};\n\n// Usage: verifyEmail('user@example.com');",
+    "howUserWillUseThis": "User enters their email address on the signup or password recovery form → System validates the email format → API checks if email is registered or available → User receives confirmation or error message → Proceeds to next step of registration or account recovery",
+    "filePath": {
+      "models": "https://github.com/GyanaprakashKhandual/Loventia-Backend/blob/src/models/user.model.js",
+      "controllers": "https://github.com/GyanaprakashKhandual/Loventia-Backend/blob/src/controllers/auth.controller.js",
+      "routes": "https://github.com/GyanaprakashKhandual/Loventia-Backend/blob/src/routes/auth.routes.js",
+      "services": "https://github.com/GyanaprakashKhandual/Loventia-Backend/blob/src/services/email.service.js",
+      "middlewares": "https://github.com/GyanaprakashKhandual/Loventia-Backend/blob/src/middlewares/validation.middleware.js",
+      "utils": "https://github.com/GyanaprakashKhandual/Loventia-Backend/blob/src/utils/emailValidator.util.js"
+    },
+    "totalLineOfCode": "~150 lines",
+    "requestSchema": {
+      "type": "object",
+      "required": ["email"],
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address to verify"
+        }
+      }
+    },
+    "responseSchema": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "Request success status"
+        },
+        "message": {
+          "type": "string",
+          "description": "Response message"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "email": { "type": "string" },
+            "isValid": { "type": "boolean" },
+            "isRegistered": { "type": "boolean" },
+            "verificationToken": { "type": "string" }
+          }
+        }
+      }
+    },
+    "errorResponses": {
+      "400": {
+        "message": "Invalid email format",
+        "example": {
+          "success": false,
+          "message": "Please provide a valid email address"
+        }
+      },
+      "409": {
+        "message": "Email already registered",
+        "example": {
+          "success": false,
+          "message": "Email already exists in system"
+        }
+      },
+      "500": {
+        "message": "Server error",
+        "example": { "success": false, "message": "Internal server error" }
+      }
+    }
+  }
+]
